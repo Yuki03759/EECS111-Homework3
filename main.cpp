@@ -9,11 +9,13 @@
 #include "types_p3.h"
 #include "p3_threads.h"
 #include "utils.h"
+#include "algorithm"
 
 pthread_cond_t  cond[4];
 pthread_cond_t a_task_is_done;
 ThreadCtrlBlk   tcb[4];
 std::vector<int> readyQue;
+std::vector<ThreadCtrlBlk> order;
 
 int num_of_alive_tasks=4;
 int occupied = 0;
@@ -23,11 +25,15 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t taskDoneMutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct timeval t_global_start;
+
+
 int global_work = 0;
 
 void fifo_schedule(void);
 void edf_schedule(void);
 void rm_schedule(void);
+
+void test(void);
 
 using namespace std;
 
@@ -70,7 +76,8 @@ int main(int argc, char** argv)
 	tcb[3].task_time = 1000;
 	tcb[3].period = 6000;
 	tcb[3].deadline = 6000;
-
+    
+    
     //whenever it needs, send signal to condition variable
 	for (int i=0; i<4; i++) {
 		pthread_cond_init (&(cond[i]), NULL);
@@ -170,8 +177,33 @@ void fifo_schedule(void)
 
 void edf_schedule(void)
 {
-	
-	;
+    pthread_mutex_lock(&mutex);
+        
+    //compare deadline
+    int thread_ID_ToBeExecuted;
+    int place_to_remove;
+    if(readyQue.size() > 0){
+        thread_ID_ToBeExecuted = readyQue[0];
+        int smallest_deadline = tcb[readyQue[0]].deadline;
+        for(int i = 0; i < readyQue.size(); i++)
+        {
+            if(tcb[readyQue[i]].deadline < smallest_deadline)
+            {
+                thread_ID_ToBeExecuted = tcb[readyQue[i]].id;
+                place_to_remove = i;
+            } 
+        }
+    }
+    
+    if(readyQue.size() > 0 && !occupied)
+    {
+        //shortest one do the operation
+        pthread_cond_signal(&(cond[thread_ID_ToBeExecuted]));
+        
+        //remove from queue
+        readyQue.erase(readyQue.begin()+place_to_remove);
+    }
+    pthread_mutex_unlock(&mutex);
 }
 
 
