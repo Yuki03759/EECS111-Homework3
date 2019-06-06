@@ -29,6 +29,8 @@ void fifo_schedule(void);
 void edf_schedule(void);
 void rm_schedule(void);
 
+using namespace std;
+
 int main(int argc, char** argv)
 {
 	if(argc !=2 || atoi(argv[1]) < 0 || atoi(argv[1]) > 2)
@@ -37,9 +39,8 @@ int main(int argc, char** argv)
 		std::cout<< "[USAGE] p3_exec <0, 1, or 2>" << std::endl;
 		return 0;
 	}
+    
 	int schedule = atoi(argv[1]);
-
-
 
 	pthread_t       tid[4];
 	int             status = 0;
@@ -47,17 +48,13 @@ int main(int argc, char** argv)
 	long            stamp = 0;
 	int             mode = 0;
 
-
-	
 	// This is to set the global start time
 	gettimeofday(&t_global_start, NULL);	
-
-
 
 	tcb[0].id = 0;
 	tcb[0].task_time = 200;
 	tcb[0].period = 1000;
-	tcb[0].deadline = 1000;
+    tcb[0].deadline = 1000;// for eariest deadline algorithm
 
 	tcb[1].id = 1;
 	tcb[1].task_time = 500;
@@ -74,11 +71,13 @@ int main(int argc, char** argv)
 	tcb[3].period = 6000;
 	tcb[3].deadline = 6000;
 
+    //whenever it needs, send signal to condition variable
 	for (int i=0; i<4; i++) {
-		pthread_cond_init (&(cond[i]), NULL); 
+		pthread_cond_init (&(cond[i]), NULL);
 	}
-	pthread_cond_init (&a_task_is_done, NULL); 
-	
+    
+	pthread_cond_init (&a_task_is_done, NULL);
+
 
 	global_work = 1;
 	printf("[Main] Create worker threads\n");
@@ -90,14 +89,13 @@ int main(int argc, char** argv)
 
 	// Wait until the thread is in place
 	usleep(MSEC(1000));
-	
-	
+
 	// This is to reset the global time and skip the initial wait
-	gettimeofday(&t_global_start, NULL);	
-	
+	gettimeofday(&t_global_start, NULL);		
 	
 	int sleep = 0;
-	for (int i=0; i<240; i++) {	
+	for (int i=0; i<240; i++) 
+    {	
 		stamp = get_time_stamp();
 
 		/////////////////////////////////////////////////////////
@@ -129,29 +127,21 @@ int main(int argc, char** argv)
 		}
 	}
 
-
 	printf("[Main] It's time to finish the thread\n");
-
-
 
 	printf("[Main] Locks\n");
 	pthread_mutex_lock(&mutex);
 	global_work = 0;
 	printf("[Main] Unlocks\n");
-
 	
 	// make sure all the process are in the ready queue
 	usleep(MSEC(3000));
 	while (readyQue.size()>0) {
 		pthread_cond_signal(&(cond[readyQue[0]]));
 		readyQue.erase(readyQue.begin()+0);
-
 	}
-
-
+    
 	pthread_mutex_unlock(&mutex);
-
-
 
 	/* wait for the second thread to finish */
 	for (int i=0; i<4; i++) {
@@ -160,14 +150,21 @@ int main(int argc, char** argv)
 		}
 	}
 
-
 	return 0;
 }
 
 
 void fifo_schedule(void)
 {
-	;
+    pthread_mutex_lock(&mutex);
+    if (readyQue.size() > 0 && !occupied)
+    {
+        int thread_ID_ToBeExecuted = readyQue[0];
+        pthread_cond_signal(&(cond[thread_ID_ToBeExecuted]));
+        
+        readyQue.erase(readyQue.begin()+0);
+    }
+    pthread_mutex_unlock(&mutex);
 }
 
 
