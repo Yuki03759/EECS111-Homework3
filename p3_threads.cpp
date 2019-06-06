@@ -26,11 +26,12 @@ void *threadfunc(void *param)
 
 	while (true) {
 		pthread_mutex_lock(&mutex);
-		if (global_work==0) {
+		if (global_work==0) 
+        {
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
-		// push id
+		// push id to ready queue
 		readyQue.push_back(id);
 		stamp = get_time_stamp();
 		printf("[%lu ms][Thread %d] Goto sleep\n", stamp, id);
@@ -47,6 +48,7 @@ void *threadfunc(void *param)
 			break;
 		}
 		
+        //someone is inside CPU, no one can enter
 		occupied = 1;
 		pthread_mutex_unlock(&mutex);
 		
@@ -70,7 +72,8 @@ void *threadfunc(void *param)
 		stamp = get_time_stamp();
 		printf("[%lu ms][Thread %d] Complete Task (%d, %d) (%lu)ms\n", stamp, id, id,iter, tcb->task_time);
 
-		if (stamp > (tcb->deadline + 50)) {
+		if (stamp > (tcb->deadline + 50)) 
+        {
 			printf("[%lu ms][Thread %d] Task (%d, %d) MISS the DEADLINE!!!! (Deadline: %lu)\n", stamp, id, id,iter, tcb->deadline);
 			fail = 1;
 			pthread_mutex_lock(&mutex);
