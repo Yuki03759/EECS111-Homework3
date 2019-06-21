@@ -13,17 +13,15 @@
 
 class ThreadCtrlBlk
 {
-private:
+    private:
 
+    public:
+        int id;
+        long period;
+        long task_time;
 
-
-public:
-	int id;
-	long period;
-	long task_time;
-
-	long start;
-	long deadline;
+        long start;
+        long deadline;
 };
 
 

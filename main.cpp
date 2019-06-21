@@ -168,7 +168,7 @@ void fifo_schedule(void)
     {
         int thread_ID_ToBeExecuted = readyQue[0];
         pthread_cond_signal(&(cond[thread_ID_ToBeExecuted]));
-        
+    
         readyQue.erase(readyQue.begin()+0);
     }
     pthread_mutex_unlock(&mutex);
@@ -177,12 +177,15 @@ void fifo_schedule(void)
 
 void edf_schedule(void)
 {
+    
     pthread_mutex_lock(&mutex);
-        
     //compare deadline
     int thread_ID_ToBeExecuted;
     int place_to_remove;
-    if(readyQue.size() > 0){
+
+    if(readyQue.size() > 0 && !occupied)
+    {
+        
         thread_ID_ToBeExecuted = readyQue[0];
         int smallest_deadline = tcb[readyQue[0]].deadline;
         for(int i = 0; i < readyQue.size(); i++)
@@ -191,24 +194,60 @@ void edf_schedule(void)
             {
                 thread_ID_ToBeExecuted = tcb[readyQue[i]].id;
                 place_to_remove = i;
-            } 
+                smallest_deadline = tcb[readyQue[i]].deadline;
+            }
+
+            //cout << "readyQue[" << i << "] : " << readyQue[i] << endl;            
         }
-    }
+     
+        //cout << "thread_ID_ToBeExecuted is : " << thread_ID_ToBeExecuted << endl; 
     
-    if(readyQue.size() > 0 && !occupied)
-    {
         //shortest one do the operation
         pthread_cond_signal(&(cond[thread_ID_ToBeExecuted]));
         
         //remove from queue
         readyQue.erase(readyQue.begin()+place_to_remove);
     }
-    pthread_mutex_unlock(&mutex);
+    
+        pthread_mutex_unlock(&mutex);
 }
 
 
 void rm_schedule(void)
 {
-	;
+	
+    pthread_mutex_lock(&mutex);
+    //compare deadline
+    int thread_ID_ToBeExecuted;
+    int place_to_remove;
+
+    if(readyQue.size() > 0 && !occupied)
+    {
+        
+        thread_ID_ToBeExecuted = readyQue[0];
+        int smallest_period = tcb[readyQue[0]].period;
+        for(int i = 0; i < readyQue.size(); i++)
+        {
+            if(tcb[readyQue[i]].period < smallest_period)
+            {
+                thread_ID_ToBeExecuted = tcb[readyQue[i]].id;
+                place_to_remove = i;
+            }
+            
+            smallest_period = tcb[readyQue[i]].period;
+
+            //cout << "readyQue[" << i << "] : " << readyQue[i] << endl;            
+        }
+     
+        //cout << "thread_ID_ToBeExecuted is : " << thread_ID_ToBeExecuted << endl; 
+    
+        //shortest one do the operation
+        pthread_cond_signal(&(cond[thread_ID_ToBeExecuted]));
+        
+        //remove from queue
+        readyQue.erase(readyQue.begin()+place_to_remove);
+    }
+    
+        pthread_mutex_unlock(&mutex);
 }
 

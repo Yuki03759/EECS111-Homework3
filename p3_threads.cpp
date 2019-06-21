@@ -14,7 +14,6 @@ extern int global_work; // DO NOT INITIALIZE!!
 
 void *threadfunc(void *param)
 {
-
 	long stamp;
 	ThreadCtrlBlk* tcb = (ThreadCtrlBlk*)param;	
 	int iter = 1;
